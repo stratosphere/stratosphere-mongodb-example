@@ -7,12 +7,7 @@ import java.util.Date;
 import java.util.Iterator;
 
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapred.InputFormat;
 import org.apache.hadoop.mapred.JobConf;
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.hadoop.io.BSONWritable;
@@ -21,16 +16,13 @@ import com.mongodb.hadoop.mapred.MongoInputFormat;
 import eu.stratosphere.api.common.Plan;
 import eu.stratosphere.api.common.Program;
 import eu.stratosphere.api.common.operators.FileDataSink;
-import eu.stratosphere.api.common.operators.GenericDataSink;
 import eu.stratosphere.api.java.record.functions.MapFunction;
 import eu.stratosphere.api.java.record.functions.ReduceFunction;
 import eu.stratosphere.api.java.record.io.CsvOutputFormat;
-import eu.stratosphere.api.java.record.io.DelimitedOutputFormat;
 import eu.stratosphere.api.java.record.operators.MapOperator;
 import eu.stratosphere.api.java.record.operators.ReduceOperator;
 import eu.stratosphere.client.LocalExecutor;
 import eu.stratosphere.hadoopcompat.HadoopDataSource;
-import eu.stratosphere.hadoopcompat.datatypes.WritableComparableWrapper;
 import eu.stratosphere.hadoopcompat.datatypes.WritableWrapper;
 import eu.stratosphere.hadoopcompat.datatypes.WritableWrapperConverter;
 import eu.stratosphere.nephele.client.JobExecutionResult;
@@ -63,10 +55,9 @@ public class Job implements Program {
 			DateFormat df = new SimpleDateFormat("E, dd MMM yyyy hh:mm:ss Z");
 			try {
 				Date parsed = df.parse(date);
-				DateTime jodaDate = new DateTime(parsed.getTime());
 				// represent each day as 20071107 (integer) for 2007.11.07
-				day.setValue(Integer.parseInt(jodaDate.getYear()+""+jodaDate.getMonthOfYear()+""+jodaDate.getDayOfMonth()));
-				jodaDay.setValue(jodaDate.getMillis());
+				day.setValue(Integer.parseInt(parsed.getYear()+""+parsed.getDay()+""+parsed.getMonth()));
+				jodaDay.setValue(parsed.getTime());
 				record.setField(0, day);
 				record.setField(1, jodaDay);
 				out.collect(record);
@@ -86,12 +77,14 @@ public class Job implements Program {
 				cnt++;
 				if(first == null) {
 					first = records.next();
+				} else {
+					records.next();
 				}
 			}
 			sInt.setValue(cnt);
 			first.setField(0, sInt);
-			DateTime joda = new DateTime(first.getField(1, LongValue.class).getValue());
-			first.setField(1, new StringValue(joda.toString()));
+			Date date = new Date(first.getField(1, LongValue.class).getValue());
+			first.setField(1, new StringValue(date.toString()));
 			out.collect(first);
 		}
 	}
@@ -105,7 +98,7 @@ public class Job implements Program {
 		MapOperator peekInto = MapOperator.builder(ExtractDayIntoKey.class )
 			.input(src).build();
 		
-		ReduceOperator sortTest = ReduceOperator.builder(Count.class, WritableComparableWrapper.class, 0)
+		ReduceOperator sortTest = ReduceOperator.builder(Count.class, IntValue.class, 0)
 				.input(peekInto).build();
 		
 		FileDataSink sink = new FileDataSink(CsvOutputFormat.class, "file:///tmp/enronCountByDay");
@@ -116,7 +109,9 @@ public class Job implements Program {
         	.field(StringValue.class, 1);
         sink.setInput(sortTest);
         
-		return new Plan(sink, "Stratosphere Quickstart SDK Sample Job");
+        Plan p = new Plan(sink, "Stratosphere Quickstart SDK Sample Job");
+        p.setDefaultParallelism(8);
+		return p;
     }
     
     public String getDescription() {

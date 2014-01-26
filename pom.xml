@@ -49,11 +49,6 @@
 		    <artifactId>mongo-java-driver</artifactId>
 		    <version>2.11.3</version>
 		</dependency>
-		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-			<version>2.3</version>
-		</dependency>
 	</dependencies>
 
 	<!-- We use the maven-jar-plugin to generate a runnable jar that you can 
