@@ -76,7 +76,7 @@ public class Job implements Program {
 			while(records.hasNext()) {
 				cnt++;
 				if(first == null) {
-					first = records.next();
+					first = records.next().createCopy();
 				} else {
 					records.next();
 				}
