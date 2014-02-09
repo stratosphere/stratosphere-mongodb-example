@@ -22,9 +22,9 @@ import eu.stratosphere.api.java.record.io.CsvOutputFormat;
 import eu.stratosphere.api.java.record.operators.MapOperator;
 import eu.stratosphere.api.java.record.operators.ReduceOperator;
 import eu.stratosphere.client.LocalExecutor;
-import eu.stratosphere.hadoopcompat.HadoopDataSource;
-import eu.stratosphere.hadoopcompat.datatypes.WritableWrapper;
-import eu.stratosphere.hadoopcompat.datatypes.WritableWrapperConverter;
+import eu.stratosphere.hadoopcompatibility.HadoopDataSource;
+import eu.stratosphere.hadoopcompatibility.datatypes.WritableWrapper;
+import eu.stratosphere.hadoopcompatibility.datatypes.WritableWrapperConverter;
 import eu.stratosphere.nephele.client.JobExecutionResult;
 import eu.stratosphere.types.IntValue;
 import eu.stratosphere.types.LongValue;
@@ -93,7 +93,7 @@ public class Job implements Program {
     	
     	JobConf conf = new JobConf();
     	conf.set("mongo.input.uri","mongodb://localhost:27017/enron_mail.messages");
-		HadoopDataSource src = new HadoopDataSource(new MongoInputFormat(), conf, "read from Mongodb", new WritableWrapperConverter());
+		HadoopDataSource<BSONWritable,BSONWritable> src = new HadoopDataSource<BSONWritable,BSONWritable>(new MongoInputFormat(), conf, "read from Mongodb", new WritableWrapperConverter<BSONWritable,BSONWritable>());
     	
 		MapOperator peekInto = MapOperator.builder(ExtractDayIntoKey.class )
 			.input(src).build();
